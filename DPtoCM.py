@@ -25,7 +25,8 @@ from tkinter import filedialog
 import pandas as pd
 import os
 
-MASTER_CONVERSION_DIR = "C:\\Users\\DELL/\\Documents\\Conversion\\"
+# MASTER_CONVERSION_DIR = "C:\\Users\\DELL/\\Documents\\Conversion\\"
+MASTER_CONVERSION_DIR = "C:\\Data\\Documents\\Conversion\\"
 #
 SOURCE = "Source\\"
 TARGET = "Target\\"
