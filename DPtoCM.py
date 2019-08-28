@@ -404,6 +404,9 @@ class Window(tk.Frame):
         tk.Frame.__init__(self, master)
         self.master = master
         self.init_window()
+        master.geometry("500x400")
+
+
 
     def init_window(self):
 
@@ -415,10 +418,36 @@ class Window(tk.Frame):
         quitButton = tk.Button(self, text="Exit",command=self.client_exit)
         runButton = tk.Button(self, text="Run", command=self.client_run)
         selectButton = tk.Button(self, text="Select", command=self.client_select)
+        textArea = tk.Text(self.master, height=20, width=60)
+        textArea.pack()
+
+        self.srcFiles = []
+        # r=root, d=directories, f = files
+        for r, d, f in os.walk(MASTER_CONVERSION_DIR + SOURCE):
+            for file in f:
+                self.srcFiles.append(file)
+                textArea.insert(tk.END, file + "\n")
 
         quitButton.place(x=0, y=0)
         runButton.place(x=30, y=0)
         selectButton.place(x=65,y=0)
+
+        # S = tk.Scrollbar(root)
+        # T = tk.Text(root, height=40, width=80)
+        # S.pack(side=tk.RIGHT, fill=tk.Y)
+        # T.pack(side=tk.LEFT, fill=tk.Y)
+        # S.config(command=T.yview)
+        # T.config(yscrollcommand=S.set)
+        # quote = """HAMLET: To be, or not to be--that is the question:
+        # Whether 'tis nobler in the mind to suffer
+        # The slings and arrows of outrageous fortune
+        # Or to take arms against a sea of troubles
+        # And by opposing end them. To die, to sleep--
+        # No more--and by a sleep to say we end
+        # The heartache, and the thousand natural shocks
+        # That flesh is heir to. 'Tis a consummation
+        # Devoutly to be wished."""
+        # T.insert(tk.END, quote)
 
     def client_exit(self):
         print("exit!")
@@ -438,20 +467,9 @@ class Window(tk.Frame):
         print(self.source)
 
 
-
-
 def main():
 
-    # transmuter = Transmuter()
-    # transmuter.transmute()
     root = tk.Tk()
-
-    # size of the window
-    root.geometry("400x300")
-
-    # root.filename = tk.filedialog.askopenfilename(initialdir="/User", title="Select file",
-    #                                            filetypes=(("jpeg files", "*.jpg"), ("all files", "*.*")))
-    # print(root.filename)
 
     app = Window(root)
     root.mainloop()
