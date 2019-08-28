@@ -73,6 +73,8 @@ class DPCustomerTransmuter:
         def normalizedName(first, last):
             return (first + "" + last).strip()
 
+        donorIdLabels = [id for id in self.dpData['Donor ID']]
+
         ids = [int(id) for id in self.dpData['Donor ID']]
 
         self.df = pd.DataFrame(index=range(0, len(ids)), columns=self.templateSheet.columns)
@@ -373,11 +375,11 @@ class Transmuter:
             fileName = str(f)
             conv = None
 
-            if fileName == 'AR Customer List.xlsx':
+            if fileName == 'Cougar_Mountain_-_All_Donors_Setup.xls':
                 template = AR_CUSTOMER_LIST + ".xls"
                 conv = DPCustomerTransmuter(template, fileName)
 
-            if fileName == 'Cougar_Mountain_-_Transaction_Export.xls':
+            if fileName == 'Cougar_Mountain_-_Transaction_Report.xls':
                 template = 'SA Transactions.xlsx'
                 conv = DPTransactionTransmuter(template, fileName)
 
