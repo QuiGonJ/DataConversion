@@ -25,7 +25,6 @@ from tkinter import filedialog
 import pandas as pd
 import os
 
-# MASTER_CONVERSION_DIR = "C:\\Users\\DELL/\\Documents\\Conversion\\"
 MASTER_CONVERSION_DIR = "C:\\Data\\Documents\\Conversion\\"
 #
 SOURCE = "Source\\"
@@ -40,7 +39,7 @@ def fileBaseOnly(path): return os.path.basename(path).split('.')[0]
 
 
 class DPCustomerTransmuter:
-    """Common base class for all employees"""
+    """Customers"""
     convCount = 0
 
     def __init__(self, template, srcDataFile):
@@ -62,7 +61,7 @@ class DPCustomerTransmuter:
         print("Template loaded: " + self.templatePath)
         # 'XXX Cougar Mountain - All Donor'
         # self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
-        self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=0, skipfooter=0).copy()
+        self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
         self.dpDataColumns = self.dpData.columns
         self.dpDataColumns = self.dpData.columns
         print("Data loaded")
@@ -139,7 +138,7 @@ class DPCustomerTransmuter:
 
 
 class DPTransactionTransmuter:
-    """Common base class for all employees"""
+    """Donor Perfect Transactions"""
     convCount = 0
 
     def __init__(self, template, srcDataFile):
@@ -380,7 +379,7 @@ class Transmuter:
                 conv = DPCustomerTransmuter(template, fileName)
 
             if fileName == 'Cougar_Mountain_-_Transaction_Report.xls':
-                template = 'SA Transactions.xlsx'
+                template = 'SA Transactions.xls'
                 conv = DPTransactionTransmuter(template, fileName)
 
             if conv:
