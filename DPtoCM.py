@@ -4,8 +4,6 @@
 # Notes:
 #   1. GitHub wiki: https://github.com/QuiGonJ/DataConversion/wiki
 #   2. Manual procedure: https://github.com/QuiGonJ/DataConversion/wiki/Cougar-Mountain-Transaction-Export-from-Donor-Perfect-Online(DPO)
-
-#
 #
 # For transactions with header and footers means that for AR transactions
 # the templates have to be split into two:  Detail and Header.  These will require key numbers and will be merged as
@@ -17,9 +15,6 @@
 # TODO:
 #   - Add run log recording each conversion
 #
-#   - Bank reconciliation
-#     - Install bank reconciliation template
-#     - How do we support two templates for transaction but only one for donors?
 #
 import math
 import re
@@ -165,18 +160,18 @@ class DPCustomerTransmuter:
 # These account keys are special case custom mappings
 # used for Transaction translation
 ACCOUNT_KEYS = {
-    'GRANT': '423000000030000',
-    'ASSESS': '511000000030000',
-    'PSFEES': '518000000030000',
-    'PSNFEE': '518000000071100',
-    'SUPPT': '518000000030000',
-    'FR': '549000000030000',
-    'ACTION': '581100000030000',
-    'SPEDN': '581200000030000',
-    'SPEAD': '581300000030000',
-    'TABLE': '581400000030000',
-    'TICKT': '581500000030000',
-    '74100': '741000000030000'
+    '423000000030000':'GRANT',
+    '511000000030000': 'ASSESS',
+    '518000000030000': 'PSFEES',
+    '518000000071100': 'PSNFEE',
+    '518000000030000': 'SUPPT',
+    '549000000030000': 'FR',
+    '581100000030000': 'ACTION',
+    '581200000030000': 'SPEDN',
+    '581300000030000': 'SPEAD',
+    '581400000030000': 'TABLE',
+    '581500000030000': 'TICKT',
+    '741000000030000': '74100'
 }
 
 class DPTransactionTransmuter:
@@ -473,7 +468,7 @@ class DPTransactionTransmuter:
         i = 0
         while i < dataLineCount:
             possibleCode = str(glNumbers[i]).strip()
-            if possibleCode in ACCOUNT_KEYS:
+            if possibleCode in ACCOUNT_KEYS.keys():
                 acctNumber = ACCOUNT_KEYS[possibleCode]
             else:
                 glSuffix = str(glNumbers[i])[-5:]
@@ -551,7 +546,7 @@ class Transmuter:
             if fileName == 'Cougar_Mountain_-_All_Donors_Setup.xls':
                 conv = DPCustomerTransmuter(fileName)
 
-            if fileName == 'Cougar_Mountain_-_Transaction_Export.xls':
+            if fileName == 'Cougar_Mountain_-_Transaction_Report.xls':
                 conv = DPTransactionTransmuter(fileName)
 
             if conv:
