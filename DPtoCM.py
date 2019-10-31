@@ -48,6 +48,9 @@ def reformStockCode(glNumber):
     #
     # Per stock code determination as explained by Rick Ridgway 19.7.24
     #
+    if glNumber in ACCOUNT_CODE_SET:
+        return glNumber
+
     try:
         # Check if digit is numeric
         magicDigit = int(glNumber[2])
@@ -173,12 +176,12 @@ ACCOUNT_KEYS = {
     '581500000030000': 'TICKT',
     '741000000030000': '74100'
 }
+ACCOUNT_KEY_SET = ACCOUNT_KEYS.keys()
+ACCOUNT_CODE_SET = ACCOUNT_KEYS.values()
 
 class DPTransactionTransmuter:
     """Donor Perfect Transactions"""
     convCount = 0
-
-
 
     def __init__(self, srcDataFile):
         transactionTemplate = 'SA Transactions.xls'
@@ -223,10 +226,15 @@ class DPTransactionTransmuter:
         detailFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.transactionDetailColumns)
         dataLineCount = len(ids)
         glNumbers = [str(n) for n in self.dpData['General Ledger']]
+
         # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
         i = 0
+
         while i < dataLineCount:
-            glNumbers[i] = glNumbers[i].replace('7BL','000')
+            possibleCode = glNumbers[i].replace('7BL','000').strip()
+            if possibleCode in ACCOUNT_KEY_SET:
+                glNumbers[i] = ACCOUNT_KEYS[possibleCode]
+
             name = str(headerFrame['Shipping Address Contact'][i]).strip()
             if name in ['', 'nan']:
                 name = str((self.dpData['Last Name (LAST_NAME)'][i])).strip()
