@@ -89,7 +89,7 @@ class DPCustomerTransmuter:
         # self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
         self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
         self.dpDataColumns = self.dpData.columns
-        self.dpDataColumns = self.dpData.columns
+        #self.dpDataColumns = self.dpData.columns
         print("Data loaded")
 
 
@@ -108,10 +108,18 @@ class DPCustomerTransmuter:
         self.df['Customer Name'].str.strip()
 
         self.df['Billing Contact Name'] = self.dpData['Optional Line']
-        self.df['Billing Address Line 1'] = self.dpData['Address']
+        self.df['Billing Address Line 1'] = self.dpData['Address'].str.strip()
         self.df['Billing Address Line 2'] = self.dpData['Address 2']
-        self.df['Billing Address Line 1'].str.strip()
-        self.df['Billing Address Line 2'].str.strip()
+
+        addr2s = []
+        for i in range(len(self.dpData['Address 2'])):
+            addr = str(self.dpData['Address 2'][i]).strip()
+            if addr in [None, "None", "nan", ""]:
+                addr = " "
+            addr2s.append(addr)
+
+        self.df['Billing Address Line 2'] = addr2s
+        # self.df['Billing Address Line 1'].str.strip()
 
         self.df['Billing City'] = self.dpData['City']
         self.df['Billing State/Province'] = self.dpData['State']
@@ -229,7 +237,6 @@ class DPTransactionTransmuter:
 
         # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
         i = 0
-
         while i < dataLineCount:
             possibleCode = glNumbers[i].replace('7BL','000').strip()
             if possibleCode in ACCOUNT_KEY_SET:
@@ -282,14 +289,20 @@ class DPTransactionTransmuter:
         headerFrame['Cash/Check/CC/Chg'] = pd.Series(dataLineCount * ["0"])
         headerFrame['Transaction Type'] = pd.Series(dataLineCount * ["0"])
 
-        headerFrame['Invoice Number'] = self.dpData['Reference / Check Number']
+
         # If check number is missing, use reference number instead.
+        checkNumbers = []
         i = 0
         while i < dataLineCount:
-            if str(headerFrame['Invoice Number'][i]) == "nan":
-                headerFrame['Invoice Number',i] = self.dpData['Reference Number'][i]
+            strCheckNumber = str(self.dpData['Reference / Check Number'][i])
+            if strCheckNumber in ["nan", "", " "]:
+                strCheckNumber = str(self.dpData['Reference Number'][i])
+                if strCheckNumber in ["nan", "", " "]:
+                    strCheckNumber = "Error: Missing Ref Number"
+            checkNumbers.append(strCheckNumber)
             i += 1
 
+        headerFrame['Invoice Number'] = checkNumbers
         headerFrame['PO Number'] = pd.Series(dataLineCount * [""])
         headerFrame['Ship Via Code'] = pd.Series(dataLineCount * [""])
         headerFrame['Department Code'] = stockCodes
