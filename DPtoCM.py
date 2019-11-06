@@ -444,13 +444,22 @@ class DPTransactionTransmuter:
         headerFrame['Category Type'] = pd.Series(dataLineCount * [""])
         headerFrame['Check Printed?'] = pd.Series(dataLineCount * [""])
         headerFrame['Activity Date'] = self.dpData['Gift Date']
-        headerFrame['Activity Amount'] = self.dpData['Gift Amount']
+
+        moneyAmounts = []
         i = 0
         while i < dataLineCount:
-            amt = str(self.dpData['Gift Amount'][i])
-            normalizedAmt = amt.replace('$','').replace(',','')
-            headerFrame['Activity Amount'] = normalizedAmt
+            amount = self.dpData['Gift Amount'][i]
+            # Remove leading dollar sign and commas
+            moneyAmounts.append(amount.replace('$', '').replace(',',''))
             i += 1
+
+        headerFrame['Activity Amount'] = moneyAmounts
+        # i = 0
+        # while i < dataLineCount:
+        #     amt = str(self.dpData['Gift Amount'][i])
+        #     normalizedAmt = amt.replace('$','').replace(',','')
+        #     headerFrame['Activity Amount'] = normalizedAmt
+        #     i += 1
 
         #
         # Detail
@@ -494,7 +503,8 @@ class DPTransactionTransmuter:
         #     i += 1
 
         #detailFrame['Description'] = pd.Series(dataLineCount * ["Donation - "])
-        detailFrame['Detail Amount'] = self.dpData['Gift Amount']
+
+        detailFrame['Detail Amount'] = moneyAmounts
         detailFrame['Cash Deposit'] = pd.Series(dataLineCount * [""])
         #
         # Assemble for sort
