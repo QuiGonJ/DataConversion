@@ -1,20 +1,12 @@
 #!/usr/bin/python
-# Convert CSV from X to Cougar Mountain
+# Convert CSVs from Donor Perfect to Cougar Mountain
 #
 # Notes:
 #   1. GitHub wiki: https://github.com/QuiGonJ/DataConversion/wiki
 #   2. Manual procedure: https://github.com/QuiGonJ/DataConversion/wiki/Cougar-Mountain-Transaction-Export-from-Donor-Perfect-Online(DPO)
 #
-# For transactions with header and footers means that for AR transactions
-# the templates have to be split into two:  Detail and Header.  These will require key numbers and will be merged as
-# Comma separated strings.
-# The Strings will be merged and written out into a pseudo csv file.
-#
-
-#
 # TODO:
 #   - Add run log recording each conversion
-#
 #
 import math
 import re
@@ -24,7 +16,6 @@ import pandas as pd
 import os
 
 MASTER_CONVERSION_DIR = "C:\\Data\\Documents\\Conversion\\"
-#
 SOURCE = "Source\\"
 TARGET = "Target\\"
 TEMPLATES = "Templates\\"
@@ -80,26 +71,17 @@ class DPCustomerTransmuter:
         self.templateSheet = pd.read_excel(self.templatePath, sheet_name='Sheet1', skiprows=0)
         self.templateCodes = pd.read_excel(self.templatePath, sheet_name='Delete this when done', skiprows=0)
         self.templateColumns = self.templateSheet.columns
-        i = 0
-        for col in self.templateSheet.columns:
-            print(str(i) + " " + col)
-            i += 1
 
-        # 'XXX Cougar Mountain - All Donor'
-        # self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
         self.dpData = pd.read_excel(self.srcDataPath, sheet_name=0, skiprows=1, skipfooter=0).copy()
         self.dpDataColumns = self.dpData.columns
-        #self.dpDataColumns = self.dpData.columns
-        print("Data loaded")
 
 
     def build(self):
 
         ids = [int(id) for id in self.dpData['Donor ID']]
-
+        dataLineCount = len(ids)
         self.df = pd.DataFrame(index=range(0, len(ids)), columns=self.templateSheet.columns)
 
-        dataLineCount = len(ids)
         self.df['Customer Number'] = pd.Series(ids)
         self.df['AR Code'] = pd.Series(dataLineCount * ["AR"])
         self.df['Customer Type'] = pd.Series(dataLineCount * [""])
@@ -119,7 +101,6 @@ class DPCustomerTransmuter:
             addr2s.append(addr)
 
         self.df['Billing Address Line 2'] = addr2s
-        # self.df['Billing Address Line 1'].str.strip()
 
         self.df['Billing City'] = self.dpData['City']
         self.df['Billing State/Province'] = self.dpData['State']
@@ -128,7 +109,6 @@ class DPCustomerTransmuter:
 
         self.df['Date Created'] = self.dpData['Created Date']
         self.df['EFT Customer Flag'] = 0
-
         self.df['UDF1'] = 0
         self.df['UDF2'] = 0
         self.df['UDF3'] = 0
@@ -164,8 +144,6 @@ class DPCustomerTransmuter:
 
         with open(self.tgtDataPath, 'w+') as dst:
             dst.write(self.arCustomerListCsvOut)
-
-        print('built')
 
 
 # These account keys are special case custom mappings
@@ -236,8 +214,7 @@ class DPTransactionTransmuter:
         glNumbers = [str(n) for n in self.dpData['General Ledger']]
 
         # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             possibleCode = glNumbers[i].replace('7BL','000').strip()
             if possibleCode in ACCOUNT_KEY_SET:
                 glNumbers[i] = ACCOUNT_KEYS[possibleCode]
@@ -246,14 +223,12 @@ class DPTransactionTransmuter:
             if name in ['', 'nan']:
                 name = str((self.dpData['Last Name (LAST_NAME)'][i])).strip()
                 headerFrame['Shipping Address Contact'].loc[i] = name
-            i += 1
+
         stockCodes = [reformStockCode(n) for n in glNumbers]
         txnIds = ["{:03d}".format(value) for value in range(dataLineCount)]
         #
         # Header
         #
-
-        # Using DataFrame.insert() to add a column
         headerFrame.insert(0, "Transaction Number", txnIds, True)
         headerFrame['Header Identifier'] = pd.Series(dataLineCount * ["1H"])
         headerFrame['Shipping Customer'] = self.dpData["Donor ID"]
@@ -263,8 +238,7 @@ class DPTransactionTransmuter:
 
         # For organization names (where no first name) use last name only.
         DBGlenBefore = len(headerFrame['Shipping Address Contact'])
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             name = str(headerFrame['Shipping Address Contact'][i]).strip()
             if name in ['', 'nan']:
                 altName = str(self.dpData['Last Name (LAST_NAME)'][i]).strip()
@@ -274,7 +248,7 @@ class DPTransactionTransmuter:
                 if (DBGBefore != DBGafter):
                   print("DBG {} {}", DBGBefore,DBGafter)
                   print("")
-            i += 1
+
         DBGlenAfter = len(headerFrame['Shipping Address Contact'])
         if (DBGlenBefore != DBGlenAfter):
             print("ERROR: frame accidentally extended")
@@ -285,22 +259,19 @@ class DPTransactionTransmuter:
         headerFrame['Shipping Address State/Province'] = pd.Series(dataLineCount * [""])
         headerFrame['Shipping Address Postal Code'] = pd.Series(dataLineCount * [""])
         headerFrame['Shipping Address Counry'] = pd.Series(dataLineCount * [""])
-
         headerFrame['Cash/Check/CC/Chg'] = pd.Series(dataLineCount * ["0"])
         headerFrame['Transaction Type'] = pd.Series(dataLineCount * ["0"])
 
 
         # If check number is missing, use reference number instead.
         checkNumbers = []
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             strCheckNumber = str(self.dpData['Reference / Check Number'][i])
             if strCheckNumber in ["nan", "", " "]:
                 strCheckNumber = str(self.dpData['Reference Number'][i])
                 if strCheckNumber in ["nan", "", " "]:
                     strCheckNumber = "Error: Missing Ref Number"
             checkNumbers.append(strCheckNumber)
-            i += 1
 
         headerFrame['Invoice Number'] = checkNumbers
         headerFrame['PO Number'] = pd.Series(dataLineCount * [""])
@@ -338,13 +309,11 @@ class DPTransactionTransmuter:
         detailFrame['Stock/Code'] = stockCodes
         detailFrame['Stock Location'] = pd.Series(dataLineCount * [""])
         detailFrame['Description'] = self.dpData['General Ledger Descr']
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             descr = str(detailFrame['Description'][i])
             if descr == "nan":
                 alt = str(detailFrame['Stock/Code'][i])
                 detailFrame['Description'][i] = alt.strip()
-            i += 1
 
         detailFrame['Sales Dept Code'] = pd.Series(dataLineCount * [""])
         detailFrame['Salesperson Code'] = pd.Series(dataLineCount * [""])
@@ -358,11 +327,9 @@ class DPTransactionTransmuter:
         detailFrame['Quantity Shipped'] = pd.Series(dataLineCount * ["1"])
         detailFrame['Quantity Backordered'] = pd.Series(dataLineCount * [""])
         # Unit price is Gift Amount but without dollar sign.
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             unitPrice = str(self.dpData['Gift Amount'][i])
             detailFrame['Unit Price'][i] = unitPrice.replace('$', '', 1).replace(',', '', 1)
-            i += 1
 
         detailFrame['Promotional Price'] = pd.Series(dataLineCount * [""])
         detailFrame['Serial Number'] = pd.Series(dataLineCount * [""])
@@ -386,17 +353,10 @@ class DPTransactionTransmuter:
         sortedLines = sorted(combinedLines)
 
         # Clip off leading transaction identifier:  Not needed in Cougar Mountain
-        # Also remove
         clippedSortedLines = []
         for sortedLine in sortedLines:
             new = re.sub(r'[0-9][0-9][0-9]\t[1-2]', '', sortedLine)
             clippedSortedLines.append(new)
-
-        headerColumns = list(headerFrame.columns)[1:]
-        detailColumns = list(detailFrame.columns)[1:]
-        # headerHeader = "\t".join(headerColumns)
-        # detailHeader = "\t".join(detailColumns)
-        # allLines = [headerHeader] + [detailHeader] + clippedSortedLines
 
         resultCsv = "\n".join(clippedSortedLines)
         # Remove "sort order" from header and detail indicators (enough times)
@@ -405,8 +365,6 @@ class DPTransactionTransmuter:
 
         with open(self.tgtTransactionDataPath, 'w+') as dst:
             dst.write(resultCsv)
-
-        print('built transactions')
 
     def buildBankReconciliation(self):
 
@@ -417,11 +375,9 @@ class DPTransactionTransmuter:
         dataLineCount = len(ids)
         glNumbers = [str(n) for n in self.dpData['General Ledger']]
         # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             glNumbers[i] = glNumbers[i].replace('7BL','000')
-            i += 1
-        # stockCodes = [reformStockCode(n) for n in glNumbers]
+
         txnIds = ["'{:03d}'".format(value) for value in range(dataLineCount)]
         #
         # Header
@@ -433,47 +389,27 @@ class DPTransactionTransmuter:
         headerFrame['Check/Doc Number'] = self.dpData['Reference / Check Number']
         headerFrame['Payee Description'] = pd.Series(dataLineCount * ["Donation"])
         headerFrame['Memo Description'] = self.dpData["General Ledger Descr"]
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             headerFrame['Memo Description'].loc[i] = str(headerFrame['Memo Description'][i])[0:35] # Shorten to 35 chars
-            i += 1
         headerFrame['Payee Address 1'] = pd.Series(dataLineCount * [""])
         headerFrame['Payee Address 2'] = pd.Series(dataLineCount * [""])
         headerFrame['Payee City'] = pd.Series(dataLineCount * [""])
         headerFrame['Payee State'] = pd.Series(dataLineCount * [""])
         headerFrame['Payee Zip Code'] = pd.Series(dataLineCount * [""])
         headerFrame['Payee Country'] = pd.Series(dataLineCount * ["United States"])
-
         headerFrame['Bank Account Transfer To'] = pd.Series(dataLineCount * [""])
-
-        # headerFrame['Invoice Number'] = self.dpData['Reference / Check Number']
-        # # If check number is missing, use reference number instead.
-        # i = 0
-        # while i < dataLineCount:
-        #     if str(headerFrame['Invoice Number'][i]) == "nan":
-        #         headerFrame['Invoice Number'][i] = self.dpData['Reference Number'][i]
-        #     i += 1
         headerFrame['Activity Type'] = pd.Series(dataLineCount * ["1"])
         headerFrame['Category Type'] = pd.Series(dataLineCount * [""])
         headerFrame['Check Printed?'] = pd.Series(dataLineCount * [""])
         headerFrame['Activity Date'] = self.dpData['Gift Date']
 
         moneyAmounts = []
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             amount = self.dpData['Gift Amount'][i]
             # Remove leading dollar sign and commas
             moneyAmounts.append(amount.replace('$', '').replace(',',''))
-            i += 1
 
         headerFrame['Activity Amount'] = moneyAmounts
-        # i = 0
-        # while i < dataLineCount:
-        #     amt = str(self.dpData['Gift Amount'][i])
-        #     normalizedAmt = amt.replace('$','').replace(',','')
-        #     headerFrame['Activity Amount'] = normalizedAmt
-        #     i += 1
-
         #
         # Detail
         #
@@ -482,8 +418,7 @@ class DPTransactionTransmuter:
         detailFrame['Detail Identifier'] = pd.Series(dataLineCount * ["2D"])
         detailFrame['Line Description'] = self.dpData['Reference / Check Number']
         # If check number is missing, use reference number instead.
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             fn = self.dpData['First Name (FIRST_NAME)'][i]
             ln = self.dpData['Last Name (LAST_NAME)'][i]
             if 'nan' == str(fn).lower():
@@ -493,10 +428,8 @@ class DPTransactionTransmuter:
             description = "Donation - {} {}".format(fn, ln)
             shortenedDescription = description[0:35]
             detailFrame['Line Description'][i] = shortenedDescription.strip() # Column max width
-            i += 1
 
-        i = 0
-        while i < dataLineCount:
+        for i in range(dataLineCount):
             possibleCode = str(glNumbers[i]).strip()
             if possibleCode in ACCOUNT_KEYS.keys():
                 acctNumber = ACCOUNT_KEYS[possibleCode]
@@ -504,19 +437,8 @@ class DPTransactionTransmuter:
                 glSuffix = str(glNumbers[i])[-5:]
                 acctNumber = "1499000000" + glSuffix
             detailFrame['GL Expense Acct'][i] = acctNumber
-            i += 1
 
-        #detailFrame['Inv/Doc Number'] = self.dpData['Reference / Check Number']
         detailFrame['Inv/Doc Number'] = pd.Series(dataLineCount * [""])
-        # i = 0
-        # while i < dataLineCount:
-        #     reference = detailFrame['Inv/Doc Number'][i]
-        #     if '' == reference:
-        #         detailFrame['Inv/Doc Number'][i] = detailFrame['Reference Number']
-        #     i += 1
-
-        #detailFrame['Description'] = pd.Series(dataLineCount * ["Donation - "])
-
         detailFrame['Detail Amount'] = moneyAmounts
         detailFrame['Cash Deposit'] = pd.Series(dataLineCount * [""])
         #
@@ -530,18 +452,10 @@ class DPTransactionTransmuter:
         sortedLines = sorted(combinedLines)
 
         # Clip off leading transaction identifier:  Not needed in Cougar Mountain
-        # Also remove
         clippedSortedLines = []
         for sortedLine in sortedLines:
             lineRemovedPrefix = re.sub(r'\'[0-9][0-9][0-9]\'\t[1-2]', '', sortedLine)
             clippedSortedLines.append(lineRemovedPrefix)
-
-        headerColumns = headerFrame.columns[1:]
-        # LAST_POPULATED_DETAIL_COLUMN = 7
-        # detailColumns = detailFrame.columns[1:LAST_POPULATED_DETAIL_COLUMN]
-        # headerHeader = "\t".join(headerColumns[1:])
-        # detailHeader = "\t".join(detailColumns[1:])
-        # allLines = [headerHeader] + [detailHeader] + clippedSortedLines
 
         resultCsv = "\n".join(clippedSortedLines)
         # Remove "sort order" from header and detail indicators (enough times)
@@ -550,8 +464,6 @@ class DPTransactionTransmuter:
 
         with open(self.tgtBRActivityDataPath, 'w+') as dst:
             dst.write(resultCsv)
-
-        print('built')
 
 
 class Transmuter:
@@ -569,7 +481,6 @@ class Transmuter:
                 self.srcFiles.append(file)
                 print(file)
 
-        ## TODO fix names!!!
         for f in self.srcFiles:
             fileName = str(f)
             conv = None
@@ -586,7 +497,6 @@ class Transmuter:
                 print('converted fileName' + fileName)
             else:
                 print('Unknown source file: ' + fileName)
-
 
 ###################################################################################
 #
@@ -640,13 +550,11 @@ class Window(tk.Frame):
         self.source = tk.filedialog.askdirectory(initialdir="/User", title="Select dir")
         print(self.source)
 
-
 def main():
     root = tk.Tk()
     app = Window(root)
     root.mainloop()
     print("done all")
-
 
 if __name__ == '__main__':
     main()
