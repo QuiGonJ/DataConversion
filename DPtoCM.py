@@ -19,10 +19,13 @@ MASTER_CONVERSION_DIR = "C:\\Data\\Documents\\Conversion\\"
 SOURCE = "Source\\"
 TARGET = "Target\\"
 TEMPLATES = "Templates\\"
-#
+
 SRC_DATA_DIR=MASTER_CONVERSION_DIR + SOURCE
 TARGET_DATA_DIR=MASTER_CONVERSION_DIR + TARGET
 TEMPLATES_DATA_DIR=MASTER_CONVERSION_DIR + TEMPLATES
+
+AR_CUSTOMER_LIST = "AR Customer List"
+AR_CUSTOMER_LIST__DATA_FILE = TARGET_DATA_DIR + AR_CUSTOMER_LIST + ".txt"
 
 BRIDGES_BANK_ACCOUNT_CODE = "BA5198"
 
@@ -129,12 +132,7 @@ class DPCustomerTransmuter:
         for name in names:
             # make Church names look like human names
             if str(name).strip().lower() == "nan": # 'Not a Number' indicates empty field...
-                churchName = str(sourceLastNames[ix])
-                names[ix] = churchName
-            # Names must be no more than 35 chars long
-            if len(names[ix]) > 35:
-                shortName = names[ix][0:35]
-                names[ix] = shortName
+                names[ix] = str(sourceLastNames[ix])[0:35] # Names must be no more than 35 chars long
             ix += 1
 
         self.df['Customer Name'] = names
@@ -146,8 +144,7 @@ class DPCustomerTransmuter:
             dst.write(self.arCustomerListCsvOut)
 
 
-# These account keys are special case custom mappings
-# used for Transaction translation
+# These account keys are special case custom mappings (used for Transaction translation)
 ACCOUNT_KEYS = {
     '423000000030000':'GRANT',
     '511000000030000': 'ASSESS',
@@ -207,7 +204,6 @@ class DPTransactionTransmuter:
     def buildTransactions(self):
 
         ids = [int(id) for id in self.dpData['Donor ID']]
-
         headerFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.transactionHeaderColumns)
         detailFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.transactionDetailColumns)
         dataLineCount = len(ids)
@@ -347,9 +343,7 @@ class DPTransactionTransmuter:
         #
         headerFrameCsvOut = headerFrame.to_csv(index=False, header=False, sep='\t')
         detailFrameCsvOut = detailFrame.to_csv(index=False, header=False, sep='\t')
-        headerLines = headerFrameCsvOut.splitlines()
-        detailLines = detailFrameCsvOut.splitlines()
-        combinedLines = headerLines + detailLines
+        combinedLines = headerFrameCsvOut.splitlines() + detailFrameCsvOut.splitlines()
         sortedLines = sorted(combinedLines)
 
         # Clip off leading transaction identifier:  Not needed in Cougar Mountain
@@ -369,7 +363,6 @@ class DPTransactionTransmuter:
     def buildBankReconciliation(self):
 
         ids = [int(id) for id in self.dpData['Donor ID']]
-
         headerFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.brActivityHeaderColumns)
         detailFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.brActivityDetailColumns)
         dataLineCount = len(ids)
@@ -450,7 +443,6 @@ class DPTransactionTransmuter:
         detailLines = detailFrameCsvOut.splitlines()
         combinedLines = headerLines + detailLines
         sortedLines = sorted(combinedLines)
-
         # Clip off leading transaction identifier:  Not needed in Cougar Mountain
         clippedSortedLines = []
         for sortedLine in sortedLines:
@@ -464,7 +456,6 @@ class DPTransactionTransmuter:
 
         with open(self.tgtBRActivityDataPath, 'w+') as dst:
             dst.write(resultCsv)
-
 
 class Transmuter:
 
@@ -499,11 +490,6 @@ class Transmuter:
                 print('Unknown source file: ' + fileName)
 
 ###################################################################################
-#
-AR_CUSTOMER_LIST = "AR Customer List"
-AR_CUSTOMER_LIST__DATA_FILE = TARGET_DATA_DIR + AR_CUSTOMER_LIST + ".txt"
-
-
 class Window(tk.Frame):
 
     def __init__(self, master=None):
@@ -548,11 +534,10 @@ class Window(tk.Frame):
 
     def client_select(self):
         self.source = tk.filedialog.askdirectory(initialdir="/User", title="Select dir")
-        print(self.source)
 
 def main():
     root = tk.Tk()
-    app = Window(root)
+    Window(root)
     root.mainloop()
     print("done all")
 
