@@ -15,6 +15,7 @@ from tkinter import filedialog
 import pandas as pd
 import os
 
+BLANK='\" \"'
 MASTER_CONVERSION_DIR = "C:\\Data\\Documents\\Conversion\\"
 SOURCE = "Source\\"
 TARGET = "Target\\"
@@ -100,11 +101,10 @@ class DPCustomerTransmuter:
         for i in range(len(self.dpData['Address 2'])):
             addr = str(self.dpData['Address 2'][i]).strip()
             if addr in [None, "None", "nan", ""]:
-                addr = " "
+                addr = BLANK
             addr2s.append(addr)
 
         self.df['Billing Address Line 2'] = addr2s
-
         self.df['Billing City'] = self.dpData['City']
         self.df['Billing State/Province'] = self.dpData['State']
         self.df['Billing Postal Code'] = self.dpData['Zip/Postal']
@@ -510,6 +510,7 @@ class Window(tk.Frame):
         selectButton = tk.Button(self, text="Select", command=self.client_select)
         textArea = tk.Text(self.master, height=20, width=60)
         textArea.pack()
+
 
         self.srcFiles = []
         # r=root, d=directories, f = files

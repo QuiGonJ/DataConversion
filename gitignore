@@ -1,4 +1,5 @@
 # Ignore
 .idea
+.idea/
 .idea/*
 *.idea/*
