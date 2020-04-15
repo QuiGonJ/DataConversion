@@ -146,7 +146,7 @@ class DPCustomerTransmuter:
 
 # These account keys are special case custom mappings (used for Transaction translation)
 ACCOUNT_KEYS = {
-    '423000000030000':'GRANT',
+    '423000000030000': 'GRANT',
     '511000000030000': 'ASSESS',
     '518000000030000': 'PSFEES',
     '518000000071100': 'PSNFEE',
@@ -209,11 +209,22 @@ class DPTransactionTransmuter:
         dataLineCount = len(ids)
         glNumbers = [str(n) for n in self.dpData['General Ledger']]
 
-        # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
+
         for i in range(dataLineCount):
+            # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
             possibleCode = glNumbers[i].replace('7BL','000').strip()
             if possibleCode in ACCOUNT_KEY_SET:
                 glNumbers[i] = ACCOUNT_KEYS[possibleCode]
+
+            # Foundation Trust Grant  (Ref. J. Videles 2020.4.08)
+            glPrefix4 = glNumbers[i][0:4]
+            if glPrefix4 == '4230':
+                print('DBG0')
+
+            # Service payment rules  (Ref. J. Videles 2020.4.08)
+            MAGIC_SERVICES = set(["5171","5182","5183","5184","5185","5186"])
+            if glPrefix4 in MAGIC_SERVICES:
+                print('DBG1')
 
             name = str(headerFrame['Shipping Address Contact'][i]).strip()
             if name in ['', 'nan']:
@@ -284,7 +295,9 @@ class DPTransactionTransmuter:
         headerFrame["Check Driver's Lic No"] = pd.Series(dataLineCount * [""])
         headerFrame['Credit Card Code'] = pd.Series(dataLineCount * [""])
         headerFrame['Credit Card Authorization'] = pd.Series(dataLineCount * [""])
-        headerFrame['Invoice Date'] = self.dpData['Created Date']
+        # Change Created Date to Gift Date (J. Vidales 20.4.2)
+        #headerFrame['Invoice Date'] = self.dpData['Created Date']
+        headerFrame['Invoice Date'] = self.dpData['Gift Date']
         headerFrame['Order Date'] = pd.Series(dataLineCount * [""])
         headerFrame['Shipping Date'] = pd.Series(dataLineCount * [""])
         headerFrame['UDF1'] = pd.Series(dataLineCount * [""])
@@ -538,6 +551,7 @@ class Window(tk.Frame):
 
 def main():
     root = tk.Tk()
+    print('DataConv 1.0 20.4.2')
     Window(root)
     root.mainloop()
     print("done all")
