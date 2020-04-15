@@ -411,7 +411,7 @@ class DPTransactionTransmuter:
 
         moneyAmounts = []
         for i in range(dataLineCount):
-            amount = self.dpData['Gift Amount'][i]
+            amount = str(self.dpData['Gift Amount'][i])
             # Remove leading dollar sign and commas
             moneyAmounts.append(amount.replace('$', '').replace(',',''))
 
