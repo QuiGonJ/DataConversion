@@ -208,8 +208,10 @@ class DPTransactionTransmuter:
         detailFrame = pd.DataFrame(index=range(0, len(ids)), columns=self.transactionDetailColumns)
         dataLineCount = len(ids)
         glNumbers = [str(n) for n in self.dpData['General Ledger']]
+        glNumbersRecode = {}
 
 
+        # Special case edits
         for i in range(dataLineCount):
             # Replace occurances of 7BL with 000 (Ref. R. Ridgway 2019.7.31)
             possibleCode = glNumbers[i].replace('7BL','000').strip()
@@ -219,11 +221,12 @@ class DPTransactionTransmuter:
             # Foundation Trust Grant  (Ref. J. Videles 2020.4.08)
             glPrefix4 = glNumbers[i][0:4]
             if glPrefix4 == '4230':
-                print('DBG0')
+                glNumbersRecode[i] = glNumbers[i][-5:-1] + '4'
 
             # Service payment rules  (Ref. J. Videles 2020.4.08)
-            MAGIC_SERVICES = set(["5171","5182","5183","5184","5185","5186"])
+            MAGIC_SERVICES = set(["5171", "5182", "5183", "5184", "5185", "5186"])
             if glPrefix4 in MAGIC_SERVICES:
+                glNumbersRecode[i] = glPrefix4
                 print('DBG1')
 
             name = str(headerFrame['Shipping Address Contact'][i]).strip()
@@ -232,6 +235,11 @@ class DPTransactionTransmuter:
                 headerFrame['Shipping Address Contact'].loc[i] = name
 
         stockCodes = [reformStockCode(n) for n in glNumbers]
+        #
+        # Problem:  I expect the changed codes (below) to show up on the headers and details, but they dont!
+        #
+        for key in glNumbersRecode.keys():
+            stockCodes[key] = glNumbersRecode.get(key)
         txnIds = ["{:03d}".format(value) for value in range(dataLineCount)]
         #
         # Header
