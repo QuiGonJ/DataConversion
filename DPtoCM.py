@@ -229,6 +229,12 @@ class DPTransactionTransmuter:
                 glNumbersRecode[i] = glPrefix4
                 print('DBG1')
 
+            # Service payment rules  (Ref. J. Videles 2021.7.19)
+            MAGIC_SERVICES = set(["4011", "5920"])
+            if glPrefix4 in MAGIC_SERVICES:
+                glNumbersRecode[i] = glPrefix4
+                print('DBG1')
+
             name = str(headerFrame['Shipping Address Contact'][i]).strip()
             if name in ['', 'nan']:
                 name = str((self.dpData['Last Name (LAST_NAME)'][i])).strip()
